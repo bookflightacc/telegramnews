@@ -33,7 +33,7 @@ from core.http import safe_get
 
 def fetch_sinchew():
 
-    url = "https://www.sinchew.com.my/hot-posts"
+    url = "url = "https://www.sinchew.com.my/wp-admin/admin-ajax.php?action=hot-post-list&taxid=-1""
 
     res = safe_get(url)
 
