@@ -30,46 +30,78 @@ async def main():
     for news in news_list:
 
         try:
-            # 1. get full article
-            # content = extract_content(news["url"])
-            
 
-            if already_posted(news["url"]):
-                print("Skipped:", news["title"])
+            # --------------------------
+            # 0. validate news
+            # --------------------------
+            if not isinstance(news, dict):
+                print("Skip invalid news:", news)
                 continue
-            # news["content"] = content
+
+            if not news.get("url"):
+                print("Skip no url:", news)
+                continue
+
+            # --------------------------
+            # 1. dedup check
+            # --------------------------
+            if already_posted(news["url"]):
+                print("Skipped:", news.get("title"))
+                continue
+
+            # --------------------------
+            # 2. extract content safely
+            # --------------------------
             detail = extract_content(news["url"])
 
-            news["content"] = detail["content"]
-            news["image"] = detail["image"]
-            # 2. AI
+            if not isinstance(detail, dict):
+                print("Bad detail:", detail)
+                continue
+
+            news["content"] = detail.get("content", "")
+            news["image"] = detail.get("image", None)
+
+            # --------------------------
+            # 3. AI (safe)
+            # --------------------------
             result = generate_news(news)
 
-            # 3. formatter
+            if not isinstance(result, dict):
+                print("AI failed:", result)
+                continue
+
+            # --------------------------
+            # 4. formatter
+            # --------------------------
             msg = f"""
-📌 {result['hashtags']}
+        📌 {result.get('hashtags', '#新闻')}
 
-🔥 {result['title_cn']}
-{result['content_cn']}
+        🔥 {result.get('title_cn', news.get('title', ''))}
+        {result.get('content_cn', '')}
 
-🇲🇾 {result['title_ms']}
-{result['content_ms']}
+        🇲🇾 {result.get('title_ms', '')}
+        {result.get('content_ms', '')}
 
-━━━━━━━━━━━━━━
-📢 关注大事件频道➡️@Malaysia_New  
+        ━━━━━━━━━━━━━━
+        📢 关注大事件频道➡️@Malaysia_New  
 
-📡 https://whatsapp.com/channel/0029Vb7xVrFFMqrOgMRT8p2T
-"""
+        📡 https://whatsapp.com/channel/0029Vb7xVrFFMqrOgMRT8p2T
+        """
+
             msg = msg[:1000]
 
-            # 4. send to Telegram
+            # --------------------------
+            # 5. send telegram
+            # --------------------------
             await send_post(
                 caption=msg,
                 image=news.get("image")
             )
 
-            print("Sent:", news["title"])
+            print("Sent:", news.get("title"))
+
             save_posted(news["url"])
+
             await asyncio.sleep(5)
 
         except Exception as e:
