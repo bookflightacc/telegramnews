@@ -31,13 +31,17 @@ async def main():
 
         try:
             # 1. get full article
-            content = extract_content(news["url"])
+            # content = extract_content(news["url"])
+            
 
             if already_posted(news["url"]):
                 print("Skipped:", news["title"])
                 continue
-            news["content"] = content
+            # news["content"] = content
+            detail = extract_content(news["url"])
 
+            news["content"] = detail["content"]
+            news["image"] = detail["image"]
             # 2. AI
             result = generate_news(news)
 
