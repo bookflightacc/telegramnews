@@ -8,7 +8,20 @@ from core.telegram import send_post
 from core.db import already_posted, save_posted	
 
 def get_all_news():
-    return fetch_bharian() + fetch_sinchew()
+
+    try:
+        bh = fetch_bharian()
+    except Exception as e:
+        print("Bharian failed:", e)
+        bh = []
+
+    try:
+        sc = fetch_sinchew()
+    except Exception as e:
+        print("Sinchew failed:", e)
+        sc = []
+
+    return bh + sc
 
 
 async def main():
@@ -21,8 +34,8 @@ async def main():
             content = extract_content(news["url"])
 
             if already_posted(news["url"]):
-            	print("Skipped:", news["title"])
-            	continue
+                print("Skipped:", news["title"])
+                continue
             news["content"] = content
 
             # 2. AI
