@@ -61,7 +61,8 @@ async def main():
             # 4. send to Telegram
             await send_post(
                 caption=msg,
-                image=news.get("image")
+                image=news.get("image"),
+                parse_mode= "HTML"
             )
 
             print("Sent:", news["title"])
