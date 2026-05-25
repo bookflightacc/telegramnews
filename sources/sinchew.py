@@ -89,51 +89,57 @@
 
 #     return articles
 
-from playwright.async_api import async_playwright
+import cloudscraper
 
-async def fetch_sinchew():
+def fetch_sinchew():
 
-    url = "https://www.sinchew.com.my/hot-posts"
+    scraper = cloudscraper.create_scraper(
+        browser={
+            "browser": "chrome",
+            "platform": "darwin",
+            "mobile": False
+        }
+    )
+
+    headers = {
+        "accept": "*/*",
+        "accept-language": "zh-MY,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "referer": "https://www.sinchew.com.my/hot-posts",
+        "x-requested-with": "XMLHttpRequest",
+        "user-agent": "Mozilla/5.0"
+    }
+
+    url = "https://www.sinchew.com.my/hot-post-list/?taxid=-1"
+
+    res = scraper.get(url, headers=headers)
+
+    print("STATUS:", res.status_code)
+
+    if res.status_code != 200:
+        return []
 
     try:
-        async with async_playwright() as p:
-
-            browser = await p.chromium.launch(
-                headless=True,
-                args=["--no-sandbox"]
-            )
-
-            page = await browser.new_page()
-
-            await page.goto(url, timeout=60000)
-
-            await page.wait_for_timeout(3000)
-
-            data = await page.evaluate("""
-                async () => {
-                    const res = await fetch('/hot-post-list/?taxid=-1', {
-                        credentials: 'include'
-                    });
-                    return await res.json();
-                }
-            """)
-
-            await browser.close()
-
-            articles = []
-
-            if isinstance(data, dict) and "zero" in data:
-
-                for item in data["zero"]:
-                    articles.append({
-                        "title": item.get("post_title"),
-                        "url": item.get("the_permalink"),
-                        "image": item.get("image"),
-                        "source": "Sinchew"
-                    })
-
-            return articles
-
+        data = res.json()
     except Exception as e:
-        print("[Sinchew Async ERROR]", e)
+        print("JSON ERROR:", e)
         return []
+
+    articles = []
+
+    for item in data.get("zero", []):
+
+        title = item.get("post_title")
+        link = item.get("the_permalink")
+
+        if not title or not link:
+            continue
+
+        articles.append({
+            "title": title,
+            "url": link,
+            "image": item.get("image"),
+            "content": "",
+            "source": "Sinchew"
+        })
+
+    return articles

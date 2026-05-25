@@ -16,7 +16,7 @@ async def get_all_news():
         bh = []
 
     try:
-        sc = await fetch_sinchew()
+        sc = fetch_sinchew()
     except Exception as e:
         print("Sinchew failed:", e)
         sc = []
