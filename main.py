@@ -7,7 +7,7 @@ from core.ai import generate_news
 from core.telegram import send_post
 from core.db import already_posted, save_posted	
 
-def get_all_news():
+async def get_all_news():
 
     try:
         bh = fetch_bharian()
