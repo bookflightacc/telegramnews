@@ -89,60 +89,55 @@
 
 #     return articles
 
-from core.http import safe_get
+from playwright.sync_api import sync_playwright
 
 def fetch_sinchew():
 
-    # 1️⃣ primary API (often blocked)
-    url_api = "https://www.sinchew.com.my/hot-post-list/?taxid=-1"
+    url = "https://www.sinchew.com.my/hot-posts"
 
-    res = safe_get(url_api)
+    try:
+        with sync_playwright() as p:
 
-    if res:
+            browser = p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox"]
+            )
 
-        try:
-            data = res.json()
+            page = browser.new_page()
+
+            # 🌐 进入页面（必须先加载 JS）
+            page.goto(url, timeout=60000)
+
+            # ⏳ 等待 JS 渲染完成
+            page.wait_for_timeout(3000)
+
+            # 🔥 在浏览器环境执行 fetch（关键绕过 403）
+            data = page.evaluate("""
+                async () => {
+                    const res = await fetch('/hot-post-list/?taxid=-1', {
+                        credentials: 'include'
+                    });
+                    return await res.json();
+                }
+            """)
+
+            browser.close()
+
+            articles = []
 
             if isinstance(data, dict) and "zero" in data:
 
-                return [
-                    {
-                        "title": x.get("post_title"),
-                        "url": x.get("the_permalink"),
-                        "image": x.get("image"),
+                for item in data["zero"]:
+
+                    articles.append({
+                        "title": item.get("post_title"),
+                        "url": item.get("the_permalink"),
+                        "image": item.get("image"),
                         "source": "Sinchew"
-                    }
-                    for x in data["zero"]
-                ]
+                    })
 
-        except:
-            pass
+            return articles
 
-    print("[Sinchew] API failed → fallback HTML")
-
-    # 2️⃣ fallback HTML mode
-    url_html = "https://www.sinchew.com.my/hot-posts"
-
-    res = safe_get(url_html)
-
-    if not res:
+    except Exception as e:
+        print("[Sinchew Playwright ERROR]", e)
         return []
-
-    from bs4 import BeautifulSoup
-
-    soup = BeautifulSoup(res.text, "html.parser")
-
-    articles = []
-
-    for a in soup.find_all("a", href=True):
-
-        if "sinchew.com.my" in a["href"]:
-
-            articles.append({
-                "title": a.get_text(strip=True),
-                "url": a["href"],
-                "image": None,
-                "source": "Sinchew"
-            })
-
-    return articles
