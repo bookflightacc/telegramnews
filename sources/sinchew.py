@@ -1,13 +1,10 @@
 import cloudscraper
 import time
+import feedparser
 
 def fetch_sinchew_scraper():
     scraper = cloudscraper.create_scraper(
-        browser={
-            "browser": "chrome",
-            "platform": "darwin",
-            "mobile": False
-        }
+        browser={"browser": "chrome", "platform": "darwin", "mobile": False}
     )
 
     api_url = "https://www.sinchew.com.my/hot-post-list/?taxid=-1"
@@ -15,7 +12,6 @@ def fetch_sinchew_scraper():
     print("Warming up session...")
     scraper.get("https://www.sinchew.com.my/", timeout=30)
     time.sleep(2)
-
     scraper.get("https://www.sinchew.com.my/hot-posts/", timeout=30)
     time.sleep(1)
 
@@ -27,14 +23,10 @@ def fetch_sinchew_scraper():
         "Referer": "https://www.sinchew.com.my/hot-posts/",
         "X-Requested-With": "XMLHttpRequest",
         "Connection": "keep-alive",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
     }
 
     res = scraper.get(api_url, headers=headers, timeout=30)
-    print("STATUS:", res.status_code)
-    print("TEXT SAMPLE:", res.text[:300])
+    print("Scraper STATUS:", res.status_code)
 
     if res.status_code != 200:
         return []
@@ -46,22 +38,52 @@ def fetch_sinchew_scraper():
         return []
 
     if "zero" not in data:
-        print("UNEXPECTED JSON STRUCTURE:", list(data.keys()))
+        return []
+
+    return [
+        {
+            "title":   item.get("post_title"),
+            "url":     item.get("the_permalink"),
+            "image":   item.get("image"),
+            "content": "",
+            "source":  "Sinchew"
+        }
+        for item in data["zero"]
+    ]
+
+
+def fetch_sinchew_rss():
+    print("Trying Sin Chew RSS fallback...")
+    feed = feedparser.parse("https://www.sinchew.com.my/feed/")
+
+    if not feed.entries:
+        print("RSS also empty — Sin Chew unreachable")
         return []
 
     articles = []
-    for item in data["zero"]:
+    for entry in feed.entries[:10]:
+        # extract image from media_content or enclosures
+        image = ""
+        if hasattr(entry, "media_content") and entry.media_content:
+            image = entry.media_content[0].get("url", "")
+        elif hasattr(entry, "enclosures") and entry.enclosures:
+            image = entry.enclosures[0].get("url", "")
+
         articles.append({
-            "title": item.get("post_title"),
-            "url": item.get("the_permalink"),
-            "image": item.get("image"),
-            "content": "",
-            "source": "Sinchew"
+            "title":   entry.title,
+            "url":     entry.link,
+            "image":   image,
+            "content": entry.get("summary", ""),  # RSS gives summary as content
+            "source":  "Sinchew"
         })
 
-    print(f"Fetched {len(articles)} articles from Sin Chew")
+    print(f"RSS fetched {len(articles)} articles from Sin Chew")
     return articles
 
 
 def fetch_sinchew():
-    return fetch_sinchew_scraper()
+    articles = fetch_sinchew_scraper()
+    if not articles:
+        print("Scraper blocked, falling back to RSS...")
+        articles = fetch_sinchew_rss()
+    return articles

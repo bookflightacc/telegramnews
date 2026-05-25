@@ -85,12 +85,21 @@ async def main():
                 continue
 
             # 1. Fetch full article
-            content = extract_content(url)
+            # 1. Fetch full article
+            extracted = extract_content(url)
+            content = extracted["content"]
+            image_from_page = extracted["image"]
+
             if not content:
-                print(f"⚠ Empty content, skipping: {title}")
+                print(f"⚠ Empty content [{url}]: {title}")
                 continue
+
             news["content"] = content
 
+            # Use page image if source didn't provide one
+            if not news.get("image") and image_from_page:
+                news["image"] = image_from_page
+            
             # 2. AI generation
             result = generate_news(news)
 
