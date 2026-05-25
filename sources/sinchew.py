@@ -89,30 +89,27 @@
 
 #     return articles
 
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 
-def fetch_sinchew():
+async def fetch_sinchew():
 
     url = "https://www.sinchew.com.my/hot-posts"
 
     try:
-        with sync_playwright() as p:
+        async with async_playwright() as p:
 
-            browser = p.chromium.launch(
+            browser = await p.chromium.launch(
                 headless=True,
                 args=["--no-sandbox"]
             )
 
-            page = browser.new_page()
+            page = await browser.new_page()
 
-            # 🌐 进入页面（必须先加载 JS）
-            page.goto(url, timeout=60000)
+            await page.goto(url, timeout=60000)
 
-            # ⏳ 等待 JS 渲染完成
-            page.wait_for_timeout(3000)
+            await page.wait_for_timeout(3000)
 
-            # 🔥 在浏览器环境执行 fetch（关键绕过 403）
-            data = page.evaluate("""
+            data = await page.evaluate("""
                 async () => {
                     const res = await fetch('/hot-post-list/?taxid=-1', {
                         credentials: 'include'
@@ -121,14 +118,13 @@ def fetch_sinchew():
                 }
             """)
 
-            browser.close()
+            await browser.close()
 
             articles = []
 
             if isinstance(data, dict) and "zero" in data:
 
                 for item in data["zero"]:
-
                     articles.append({
                         "title": item.get("post_title"),
                         "url": item.get("the_permalink"),
@@ -139,5 +135,5 @@ def fetch_sinchew():
             return articles
 
     except Exception as e:
-        print("[Sinchew Playwright ERROR]", e)
+        print("[Sinchew Async ERROR]", e)
         return []
