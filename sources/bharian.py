@@ -28,6 +28,32 @@
 #     return articles
 
 import requests
+from urllib.parse import urljoin
+
+def get_bharian_image(item):
+    for key in ["field_article_images_filtered", "field_article_images"]:
+        images = item.get(key)
+
+        if isinstance(images, list) and images:
+            image_url = images[0].get("url")
+            if image_url:
+                return urljoin("https://www.bharian.com.my", image_url)
+
+    for key in [
+        "field_image_socialmedia",
+        "field_image_listing_featured_v2",
+        "field_image_listing_v2",
+        "field_image_listing_featured",
+        "field_image_portrait",
+        "field_image_three_wide_col",
+        "image",
+        "thumbnail",
+    ]:
+        image_url = item.get(key)
+        if image_url:
+            return urljoin("https://www.bharian.com.my", image_url)
+
+    return None
 
 def fetch_bharian():
 
@@ -79,7 +105,7 @@ def fetch_bharian():
             "url": item.get("url") or item.get("link"),
             "content": "",
             "source": "Bharian",
-            "image": item.get("image")
+            "image": get_bharian_image(item)
         })
 
     return articles
