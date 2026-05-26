@@ -1,32 +1,119 @@
-import cloudscraper
-import time
-import feedparser
+# import requests
 
-def fetch_sinchew_scraper():
+# def fetch_sinchew():
+#     url = "https://www.sinchew.com.my/hot-post-list/?taxid=-1"
+
+#     headers = {
+#         "User-Agent": "Mozilla/5.0",
+#         "Referer": "https://www.sinchew.com.my/hot-posts"
+#     }
+
+#     res = requests.get(url, headers=headers)
+#     data = res.json()
+
+#     articles = []
+
+#     items = data.get("zero", [])
+
+#     for item in items:
+#         title = item.get("post_title")
+#         url = item.get("the_permalink")
+
+#         articles.append({
+#     		"title": title,
+#     		"url": url,
+#     		"content": "",
+#     		"source": "Sinchew",
+#     		"image": item.get("image")   # ✔ 必须有
+#         })
+#     return articles
+# import json
+# from bs4 import BeautifulSoup
+# from core.http import safe_get
+
+# def fetch_sinchew():
+
+#     url = "https://www.sinchew.com.my/hot-post-list/?taxid=-1"
+
+#     res = safe_get(url)
+
+#     if not res:
+#         return []
+
+#     data = None
+
+#     # -------------------------
+#     # TRY JSON MODE FIRST
+#     # -------------------------
+#     try:
+#         data = res.json()
+#     except:
+#         data = None
+
+#     articles = []
+
+#     # -------------------------
+#     # CASE 1: JSON SUCCESS
+#     # -------------------------
+#     if isinstance(data, dict) and "zero" in data:
+
+#         for item in data.get("zero", []):
+#             articles.append({
+#                 "title": item.get("post_title"),
+#                 "url": item.get("the_permalink"),
+#                 "content": "",
+#                 "source": "Sinchew",
+#                 "image": item.get("image")
+#             })
+
+#         return articles
+
+#     # -------------------------
+#     # CASE 2: FALLBACK HTML PARSE
+#     # -------------------------
+#     soup = BeautifulSoup(res.text, "html.parser")
+
+#     for a in soup.find_all("a", href=True):
+
+#         href = a["href"]
+#         title = a.get_text(strip=True)
+
+#         if "sinchew.com.my" in href and title:
+
+#             articles.append({
+#                 "title": title,
+#                 "url": href,
+#                 "content": "",
+#                 "source": "Sinchew"
+#             })
+
+#     return articles
+
+import cloudscraper
+
+def fetch_sinchew():
+
     scraper = cloudscraper.create_scraper(
-        browser={"browser": "chrome", "platform": "darwin", "mobile": False}
+        browser={
+            "browser": "chrome",
+            "platform": "darwin",
+            "mobile": False
+        }
     )
 
-    api_url = "https://www.sinchew.com.my/hot-post-list/?taxid=-1"
-
-    print("Warming up session...")
-    scraper.get("https://www.sinchew.com.my/", timeout=30)
-    time.sleep(2)
-    scraper.get("https://www.sinchew.com.my/hot-posts/", timeout=30)
-    time.sleep(1)
-
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/javascript, */*; q=0.01",
-        "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Referer": "https://www.sinchew.com.my/hot-posts/",
-        "X-Requested-With": "XMLHttpRequest",
-        "Connection": "keep-alive",
+        "accept": "*/*",
+        "accept-language": "zh-MY,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "referer": "https://www.sinchew.com.my/hot-posts",
+        "x-requested-with": "XMLHttpRequest",
+        "user-agent": "Mozilla/5.0"
     }
 
-    res = scraper.get(api_url, headers=headers, timeout=30)
-    print("Scraper STATUS:", res.status_code)
+    url = "https://www.sinchew.com.my/hot-post-list/?taxid=-1"
+
+    res = scraper.get(url, headers=headers)
+
+    print("STATUS:", res.status_code)
 
     if res.status_code != 200:
         return []
@@ -37,53 +124,22 @@ def fetch_sinchew_scraper():
         print("JSON ERROR:", e)
         return []
 
-    if "zero" not in data:
-        return []
-
-    return [
-        {
-            "title":   item.get("post_title"),
-            "url":     item.get("the_permalink"),
-            "image":   item.get("image"),
-            "content": "",
-            "source":  "Sinchew"
-        }
-        for item in data["zero"]
-    ]
-
-
-def fetch_sinchew_rss():
-    print("Trying Sin Chew RSS fallback...")
-    feed = feedparser.parse("https://www.sinchew.com.my/feed/")
-
-    if not feed.entries:
-        print("RSS also empty — Sin Chew unreachable")
-        return []
-
     articles = []
-    for entry in feed.entries[:10]:
-        # extract image from media_content or enclosures
-        image = ""
-        if hasattr(entry, "media_content") and entry.media_content:
-            image = entry.media_content[0].get("url", "")
-        elif hasattr(entry, "enclosures") and entry.enclosures:
-            image = entry.enclosures[0].get("url", "")
+
+    for item in data.get("zero", []):
+
+        title = item.get("post_title")
+        link = item.get("the_permalink")
+
+        if not title or not link:
+            continue
 
         articles.append({
-            "title":   entry.title,
-            "url":     entry.link,
-            "image":   image,
-            "content": entry.get("summary", ""),  # RSS gives summary as content
-            "source":  "Sinchew"
+            "title": title,
+            "url": link,
+            "image": item.get("image"),
+            "content": "",
+            "source": "Sinchew"
         })
 
-    print(f"RSS fetched {len(articles)} articles from Sin Chew")
-    return articles
-
-
-def fetch_sinchew():
-    articles = fetch_sinchew_scraper()
-    if not articles:
-        print("Scraper blocked, falling back to RSS...")
-        articles = fetch_sinchew_rss()
     return articles
