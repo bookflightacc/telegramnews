@@ -40,9 +40,9 @@ Return ONLY JSON:
 {{
   "hashtags": "relevant hashtag for example #国际新闻 #社会新闻",
   "title_cn": "clean Chinese headline",
-  "content_cn": "clean Chinese paragraph(not more than 300 characters)",
+  "content_cn": "clean Chinese paragraph(not more than 180 characters)",
   "title_ms": "natural Malay headline",
-  "content_ms": "natural Malay content(not more than 500 characters)"
+  "content_ms": "natural Malay content(not more than 220 characters)"
 }}
 
 News:

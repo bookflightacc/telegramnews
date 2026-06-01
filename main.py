@@ -43,18 +43,19 @@ async def main():
 
             # 3. formatter
             msg = f"""
-📌 {result['hashtags']}
+<b>{result['hashtags']}</b>
 
-🔥 {result['title_cn']}
+<b>📰 {result['title_cn']}</b>
 {result['content_cn']}
 
-🇲🇾 {result['title_ms']}
+<b>🇲🇾 {result['title_ms']}</b>
 {result['content_ms']}
 
 ━━━━━━━━━━━━━━
-📢 关注新闻频道➡️@Malaysia_New  
-
+📢 关注新闻频道 <a href="https://t.me/Malaysia_New">@Malaysia_New</a>
 📡 <a href="https://whatsapp.com/channel/0029Vb7xVrFFMqrOgMRT8p2T">关注WhatsApp频道</a>
+🌐 投稿 Penyerahan artikel <a href="https://t.me/MK_DEE96">@MK_DEE96</a>
+🎉 娱乐城 <a href="https://t.me/freekredit66">@freecredit66</a>
 """
             msg = msg[:1000]
 
